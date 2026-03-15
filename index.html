@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Stock Predictor | Quantitative ML Forecast</title>
+    <!-- Modern Typography: Inter for UI, Roboto Mono for numbers -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            /* Deeper premium dark theme */
+            --bg-dark: #09090b;
+            --bg-surface: #18181b;
+            --text-light: #f8fafc;
+            --text-muted: #94a3b8;
+            
+            /* Glassmorphism settings */
+            --glass-bg: rgba(24, 24, 27, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-glow: rgba(59, 130, 246, 0.15);
+            
+            /* Dynamic Neons */
+            --accent-primary: #3b82f6; /* Cyberpunk Blue */
+            --accent-hover: #60a5fa;
+            --accent-gradient: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            
+            --success-color: #10b981;
+            --success-bg: rgba(16, 185, 129, 0.15);
+            --danger-color: #ef4444;
+            --danger-bg: rgba(239, 68, 68, 0.15);
+            --neutral-bg: rgba(255, 255, 255, 0.05);
+            
+            /* Shadows & Transitions */
+            --shadow-elevated: 0 10px 40px -10px rgba(0,0,0,0.5);
+            --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.3);
+            --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* 
+           High-end background with pseudo element gradients 
+           that slowly pulse behind the content 
+        */
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            min-height: 100vh;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1rem;
+            position: relative;
+        }
+
+        /* Ambient background glow */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -20%; left: -10%;
+            width: 50vw; height: 50vw;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 60%);
+            z-index: -1;
+            animation: pulse-ambient 15s ease-in-out infinite alternate;
+        }
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: -20%; right: -10%;
+            width: 60vw; height: 60vw;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.06) 0%, transparent 60%);
+            z-index: -1;
+            animation: pulse-ambient 12s ease-in-out infinite alternate-reverse;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            z-index: 1;
+        }
+
+        /* --- TYPOGRAPHY & HEADER --- */
+        header {
+            text-align: center;
+            padding: 3rem 1rem;
+            animation: slideDown 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        h1 {
+            font-weight: 800;
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+            margin-bottom: 1rem;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            font-size: clamp(1rem, 2vw, 1.25rem);
+            font-weight: 400;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* --- GLASS COMPONENT BASE --- */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 1.25rem;
+            box-shadow: var(--shadow-elevated);
+        }
+
+        /* --- SEARCH CONTROLS (HERO) --- */
+        .controls-wrapper {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            animation: fadeInUp 0.8s 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: row;
+            gap: 1rem;
+            padding: 0.75rem;
+            width: 100%;
+            max-width: 700px;
+            align-items: center;
+            border-radius: 100px; 
+            background: rgba(24, 24, 27, 0.8);
+            border: 1px solid rgba(255,255,255,0.1);
+            position: relative;
+            transition: var(--transition-smooth);
+        }
+
+        .controls:focus-within {
+            border-color: rgba(59, 130, 246, 0.5);
+            box-shadow: var(--shadow-glow);
+            background: rgba(24, 24, 27, 0.95);
+        }
+
+        .controls input[type="text"] {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-light);
+            font-size: 1.1rem;
+            padding: 1rem 1.5rem;
+            outline: none;
+            width: 100%;
+        }
+
+        .controls input[type="text"]::placeholder {
+            color: rgba(148, 163, 184, 0.6);
+            font-weight: 300;
+        }
+
+        button.btn-primary {
+            padding: 1rem 2rem;
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: white;
+            background: var(--accent-gradient);
+            border: none;
+            border-radius: 100px;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            white-space: nowrap;
+        }
+
+        button.btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.5);
+        }
+
+        button.btn-primary:active:not(:disabled) {
+            transform: translateY(0) scale(0.98);
+        }
+
+        button:disabled {
+            background: rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.3);
+            cursor: not-allowed;
+        }
+
+        /* --- DASHBOARD LAYOUT (CSS GRID) --- */
+        .dashboard {
+            display: none;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 1.5rem;
+            width: 100%;
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+
+        /* --- NEWS TICKER WIDGET (Spans full width) --- */
+        .news-section {
+            grid-column: span 12;
+            padding: 1.5rem 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .news-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding-bottom: 1rem;
+        }
+
+        .news-header h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-light);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .news-header h3::before {
+            content: '•';
+            color: var(--accent-primary);
+            font-size: 1.5rem;
+            line-height: 0;
+        }
+
+        .sentiment-badge {
+            padding: 0.4rem 1rem;
+            border-radius: 100px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .news-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .news-item {
+            background: rgba(255,255,255,0.02);
+            padding: 1rem 1.25rem;
+            border-radius: 0.75rem;
+            border: 1px solid rgba(255,255,255,0.03);
+            font-size: 0.95rem;
+            color: #cbd5e1;
+            line-height: 1.5;
+            transition: var(--transition-smooth);
+        }
+
+        .news-item:hover {
+            background: rgba(255,255,255,0.05);
+            transform: translateY(-2px);
+        }
+
+        /* --- STATS SQUARES (4 Columns on Desktop) --- */
+        .stats-wrapper {
+            grid-column: span 12;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+        }
+
+        .stat-card {
+            padding: 2rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            transition: var(--transition-smooth);
+        }
+        
+        /* Subtle top shimmer on cards */
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            opacity: 0.5;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255,255,255,0.2);
+            box-shadow: 0 15px 35px -10px rgba(0,0,0,0.6);
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.75rem;
+        }
+
+        .stat-value {
+            font-family: 'Roboto Mono', monospace;
+            font-size: 2.25rem;
+            font-weight: 600;
+            color: var(--text-light);
+            letter-spacing: -1px;
+        }
+
+        .stat-value.brand { color: var(--text-light); }
+        .stat-value.positive { color: var(--success-color); text-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
+        .stat-value.negative { color: var(--danger-color); text-shadow: 0 0 15px rgba(239, 68, 68, 0.4); }
+
+        /* --- CHART SECTION (Spans 8 cols on desktop) --- */
+        .chart-wrapper {
+            grid-column: span 8;
+            padding: 1.5rem;
+            height: 450px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-light);
+        }
+
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            width: 100%;
+        }
+
+        /* --- TABLE SECTION (Spans 4 cols on desktop) --- */
+        .table-wrapper {
+            grid-column: span 4;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            max-height: 450px;
+        }
+
+        .table-scroll {
+            flex: 1;
+            overflow-y: auto;
+            border-radius: 0.5rem;
+            /* Custom Scrollbar */
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.2) transparent;
+        }
+        
+        .table-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .table-scroll::-webkit-scrollbar-thumb {
+            background-color: rgba(255,255,255,0.2);
+            border-radius: 10px;
+        }
+
+        .prediction-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .prediction-table th {
+            position: sticky;
+            top: 0;
+            background: rgba(24, 24, 27, 0.95);
+            backdrop-filter: blur(10px);
+            color: var(--text-muted);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 1rem 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            font-size: 0.75rem;
+            z-index: 2;
+        }
+
+        .prediction-table td {
+            padding: 1rem 0.75rem;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            font-family: 'Roboto Mono', monospace;
+            color: #cbd5e1;
+        }
+        
+        .prediction-table tr {
+            transition: background-color 0.2s;
+        }
+
+        .prediction-table tr:hover {
+            background-color: rgba(255,255,255,0.03);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+        .badge.positive { background: var(--success-bg); color: var(--success-color); }
+        .badge.negative { background: var(--danger-bg); color: var(--danger-color); }
+
+        /* --- LOADING OVERLAY --- */
+        .loader-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(9, 9, 11, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.3s forwards;
+        }
+
+        /* Sci-Fi Scanner Animation */
+        .scanner-loader {
+            width: 250px;
+            height: 2px;
+            background: rgba(255,255,255,0.1);
+            position: relative;
+            margin-bottom: 2rem;
+            overflow: hidden;
+            border-radius: 2px;
+        }
+        .scanner-loader::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; bottom: 0;
+            width: 40%;
+            background: var(--accent-gradient);
+            box-shadow: 0 0 20px var(--accent-primary);
+            animation: scan 1.5s ease-in-out infinite alternate;
+        }
+
+        .loader-text {
+            color: var(--text-light);
+            font-weight: 500;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+            animation: pulseText 2s infinite;
+        }
+
+        /* --- RESPONSIVE MEDIA QUERIES --- */
+        @media (max-width: 1024px) {
+            .stats-wrapper {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .chart-wrapper {
+                grid-column: span 12;
+            }
+            .table-wrapper {
+                grid-column: span 12;
+            }
+        }
+
+        @media (max-width: 768px) {
+            header {
+                padding: 2rem 1rem 1.5rem;
+            }
+            .controls {
+                flex-direction: column;
+                border-radius: 1rem;
+                padding: 1rem;
+                background: var(--glass-bg);
+            }
+            .controls input[type="text"] {
+                width: 100%;
+                text-align: center;
+                padding: 0.8rem;
+            }
+            button.btn-primary {
+                width: 100%;
+                padding: 1rem;
+                border-radius: 0.5rem;
+            }
+            .stats-wrapper {
+                grid-template-columns: 1fr;
+            }
+            .stat-card {
+                padding: 1.5rem;
+            }
+        }
+
+        /* --- KEYFRAMES --- */
+        @keyframes scan {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(250%); }
+        }
+        @keyframes pulseText {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        @keyframes pulse-ambient {
+            0% { transform: scale(1) translate(0, 0); opacity: 0.5; }
+            100% { transform: scale(1.1) translate(2vw, 2vh); opacity: 1; }
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Full screen loading overlay -->
+    <div class="loader-overlay" id="loader">
+        <div class="scanner-loader"></div>
+        <div class="loader-text">Training 30 XGBoost Models live...</div>
+    </div>
+
+    <div class="container">
+        <header id="mainHeader">
+            <h1>Quantitative AI</h1>
+            <p class="subtitle">Real-time global market ingestion, NLP sentiment analysis, and multi-step XGBoost predictive modeling.</p>
+        </header>
+
+        <div class="controls-wrapper" id="controlWrap">
+            <div class="controls">
+                <input type="text" id="tickerInput" list="tickerList" placeholder="Initializing engine..." disabled autocomplete="off">
+                <datalist id="tickerList">
+                    <!-- Populated dynamically via /api/search -->
+                </datalist>
+                <button id="predictBtn" class="btn-primary" disabled>Generate Forecast</button>
+            </div>
+        </div>
+
+        <div class="dashboard" id="dashboard">
+            
+            <!-- News Component -->
+            <div class="glass-panel news-section" id="newsSection" style="display: none;">
+                <div class="news-header">
+                    <h3>Market Intelligence Cortex</h3>
+                    <span class="sentiment-badge" id="dispSentiment">Evaluating...</span>
+                </div>
+                <!-- Dynamic grid for articles -->
+                <div class="news-grid" id="newsHeadlines">
+                </div>
+            </div>
+
+            <!-- Stats Component -->
+            <div class="stats-wrapper">
+                <div class="glass-panel stat-card">
+                    <div class="stat-label">Asset Identity</div>
+                    <div class="stat-value brand" id="dispTicker">--</div>
+                </div>
+                <div class="glass-panel stat-card">
+                    <div class="stat-label">Live Price</div>
+                    <div class="stat-value" id="dispCurrentPrice">--</div>
+                </div>
+                <div class="glass-panel stat-card">
+                    <div class="stat-label">T+30 Forecast</div>
+                    <div class="stat-value" id="dispForecastPrice">--</div>
+                </div>
+                <div class="glass-panel stat-card">
+                    <div class="stat-label">Delta (30D)</div>
+                    <div class="stat-value" id="dispMove">--</div>
+                </div>
+            </div>
+
+            <!-- Chart Component -->
+            <div class="glass-panel chart-wrapper">
+                <div class="section-title">Trajectory Analysis</div>
+                <div class="canvas-container">
+                    <canvas id="predictionChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Table Component -->
+            <div class="glass-panel table-wrapper">
+                <div class="section-title">Day-Wise Matrix</div>
+                <div class="table-scroll">
+                    <table class="prediction-table" id="predictionTable">
+                        <thead>
+                            <tr>
+                                <th>Target</th>
+                                <th>Projected</th>
+                                <th>Variance</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'https://stock-predictor-backend.onrender.com'; // Change to your Render URL after deployment
+        let predictionChartInstance = null;
+        const CACHE_BUST = Date.now();
+
+        // 1. Fetch available tickers on load (Fallback defaults)
+        async function fetchTickers() {
+            const input = document.getElementById('tickerInput');
+            const dataList = document.getElementById('tickerList');
+            const btn = document.getElementById('predictBtn');
+
+            try {
+                input.placeholder = "Booting connection...";
+                const response = await fetch(`${API_BASE_URL}/api/tickers`);
+                const data = await response.json();
+
+                if (data.tickers) {
+                    dataList.innerHTML = '';
+                    data.tickers.forEach(t => {
+                        const opt = document.createElement('option');
+                        opt.value = t;
+                        dataList.appendChild(opt);
+                    });
+                    input.placeholder = "Search any global asset (e.g. Reliance, AAPL)...";
+                    input.disabled = false;
+                    btn.disabled = false;
+                } else {
+                    input.placeholder = "Enter raw ticker symbol...";
+                    input.disabled = false;
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                console.error("Failed to load tickers", error);
+                input.placeholder = "Server Disconnected. Cannot fetch data.";
+            }
+        }
+
+        // 1.5 Setup dynamic autocomplete search (Yahoo API)
+        let searchTimeout = null;
+        document.getElementById('tickerInput').addEventListener('input', (e) => {
+            const query = e.target.value.trim();
+            if (query.length < 2) return; 
+            if (searchTimeout) clearTimeout(searchTimeout);
+
+            searchTimeout = setTimeout(async () => {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/search?q=${encodeURIComponent(query)}`);
+                    const results = await response.json();
+
+                    if (results && results.length > 0) {
+                        const dataList = document.getElementById('tickerList');
+                        dataList.innerHTML = '';
+                        results.forEach(res => {
+                            const opt = document.createElement('option');
+                            const exch = res.exchange ? ` (${res.exchange})` : '';
+                            opt.value = res.symbol;
+                            opt.textContent = `${res.name}${exch}`;
+                            dataList.appendChild(opt);
+                        });
+                    }
+                } catch (err) {
+                    console.error("Search failed:", err);
+                }
+            }, 300); // 300ms debounce for snappier feel
+        });
+
+        // 2. Handle Predict Action
+        document.getElementById('predictBtn').addEventListener('click', executePrediction);
+        document.getElementById('tickerInput').addEventListener('keypress', (e) => {
+            if(e.key === 'Enter') executePrediction();
+        });
+
+        async function executePrediction() {
+            const inputField = document.getElementById('tickerInput');
+            const ticker = inputField.value.trim().toUpperCase();
+            if (!ticker) {
+                alert("Please enter a valid ticker.");
+                return;
+            }
+
+            // Lock UI & Show Overlay
+            const predictBtn = document.getElementById('predictBtn');
+            predictBtn.disabled = true;
+            inputField.disabled = true;
+            document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('loader').style.display = 'flex';
+            
+            // Smoothly collapse header size if it's the first search
+            document.getElementById('mainHeader').style.padding = '1.5rem 1rem 0.5rem';
+            document.querySelector('h1').style.fontSize = 'clamp(2rem, 3.5vw, 2.5rem)';
+            document.querySelector('.subtitle').style.display = 'none';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/predict`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ticker: ticker })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                } else {
+                    updateDashboard(data);
+                }
+            } catch (error) {
+                alert('Connection to backend failed. Make sure app.py is running.');
+                console.error(error);
+            } finally {
+                predictBtn.disabled = false;
+                inputField.disabled = false;
+                document.getElementById('loader').style.display = 'none';
+            }
+        }
+
+        // 3. Update the UI
+        function updateDashboard(data) {
+            document.getElementById('dashboard').style.display = 'grid';
+
+            const currentPrice = data.latest_price;
+            const weekForecast = data.predictions[data.predictions.length - 1]; // Day 30
+            const moveAmt = weekForecast - currentPrice;
+            const movePct = (moveAmt / currentPrice) * 100;
+
+            // UI: News Segment
+            if (data.sentiment) {
+                document.getElementById('newsSection').style.display = 'block';
+                const sScore = data.sentiment.score;
+                const scoreBadge = document.getElementById('dispSentiment');
+                
+                if (sScore > 0.1) {
+                    scoreBadge.textContent = "BULLISH (+" + sScore.toFixed(2) + ")";
+                    scoreBadge.style.backgroundColor = 'var(--success-bg)';
+                    scoreBadge.style.color = 'var(--success-color)';
+                } else if (sScore < -0.1) {
+                    scoreBadge.textContent = "BEARISH (" + sScore.toFixed(2) + ")";
+                    scoreBadge.style.backgroundColor = 'var(--danger-bg)';
+                    scoreBadge.style.color = 'var(--danger-color)';
+                } else {
+                    scoreBadge.textContent = "NEUTRAL (" + sScore.toFixed(2) + ")";
+                    scoreBadge.style.backgroundColor = 'var(--neutral-bg)';
+                    scoreBadge.style.color = 'var(--text-muted)';
+                }
+
+                const hlList = document.getElementById('newsHeadlines');
+                hlList.innerHTML = '';
+                data.sentiment.headlines.forEach(hl => {
+                    const div = document.createElement('div');
+                    div.className = 'news-item';
+                    div.textContent = hl;
+                    hlList.appendChild(div);
+                });
+            }
+
+            // UI: Stat Cards
+            document.getElementById('dispTicker').textContent = data.ticker;
+            document.getElementById('dispCurrentPrice').textContent = "$" + currentPrice.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits:2});
+            document.getElementById('dispForecastPrice').textContent = "$" + weekForecast.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits:2});
+
+            const moveEl = document.getElementById('dispMove');
+            const signStr = moveAmt > 0 ? "+" : "";
+            moveEl.textContent = signStr + movePct.toFixed(2) + "%";
+            moveEl.className = "stat-value " + (moveAmt >= 0 ? "positive" : "negative");
+
+            // UI: Update Chart
+            renderChart(data);
+
+            // UI: Dynamic Table
+            const tbody = document.querySelector('#predictionTable tbody');
+            tbody.innerHTML = '';
+
+            data.predictions.forEach((pred, index) => {
+                const dateTarget = data.future_dates[index];
+                const change = ((pred - currentPrice) / currentPrice) * 100;
+                const changeClass = change >= 0 ? 'positive' : 'negative';
+                const changeSign = change >= 0 ? '+' : '';
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="color: var(--text-muted); font-size: 0.8rem;">${dateTarget}</td>
+                    <td style="color: var(--text-light);">$${pred.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits:2})}</td>
+                    <td><span class="badge ${changeClass}">${changeSign}${change.toFixed(2)}%</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // 4. Re-styled Chart rendering
+        function renderChart(data) {
+            const ctx = document.getElementById('predictionChart').getContext('2d');
+
+            if (predictionChartInstance) {
+                predictionChartInstance.destroy();
+            }
+
+            const allDates = [...data.historical_data.dates, ...data.future_dates];
+            const historicalPoints = [...data.historical_data.prices];
+            for (let i = 0; i < data.future_dates.length; i++) {
+                historicalPoints.push(null);
+            }
+
+            const futurePoints = Array(data.historical_data.prices.length - 1).fill(null);
+            futurePoints.push(data.latest_price);
+            futurePoints.push(...data.predictions);
+
+            // Dark Mode Gradients
+            const gradHist = ctx.createLinearGradient(0, 0, 0, 400);
+            gradHist.addColorStop(0, 'rgba(59, 130, 246, 0.3)');
+            gradHist.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
+
+            const gradFut = ctx.createLinearGradient(0, 0, 0, 400);
+            gradFut.addColorStop(0, 'rgba(139, 92, 246, 0.3)');
+            gradFut.addColorStop(1, 'rgba(139, 92, 246, 0.0)');
+
+            predictionChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: allDates,
+                    datasets: [
+                        {
+                            label: 'Historical Close',
+                            data: historicalPoints,
+                            borderColor: '#3b82f6', // Blueprint Blue
+                            backgroundColor: gradHist,
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            pointHoverRadius: 6,
+                            fill: true,
+                            tension: 0.2
+                        },
+                        {
+                            label: 'XGBoost Trajectory',
+                            data: futurePoints,
+                            borderColor: '#8b5cf6', // Violet
+                            backgroundColor: gradFut,
+                            borderDash: [5, 5],
+                            borderWidth: 3,
+                            pointRadius: 3,
+                            pointHoverRadius: 6,
+                            pointBackgroundColor: '#8b5cf6',
+                            fill: true,
+                            tension: 0.2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            align: 'end',
+                            labels: { color: '#94a3b8', font: { family: 'Inter', size: 12 }, usePointStyle: true, boxWidth: 6 }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(24, 24, 27, 0.95)',
+                            titleColor: '#f8fafc',
+                            bodyColor: '#cbd5e1',
+                            borderColor: 'rgba(255,255,255,0.1)',
+                            borderWidth: 1,
+                            padding: 12,
+                            titleFont: { family: 'Inter', size: 13 },
+                            bodyFont: { family: 'Roboto Mono', size: 13 },
+                            displayColors: true,
+                            callbacks: {
+                                label: function (context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) { label += ': '; }
+                                    if (context.parsed.y !== null) {
+                                        label += '$' + context.parsed.y.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits:2});
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.03)', drawBorder: false },
+                            ticks: { color: '#64748b', maxTicksLimit: 10, font: {family: 'Roboto Mono', size: 11} }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255, 255, 255, 0.03)', drawBorder: false },
+                            ticks: {
+                                color: '#64748b',
+                                font: {family: 'Roboto Mono', size: 11},
+                                callback: function (value) { return '$' + value.toLocaleString(); }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        fetchTickers();
+    </script>
+</body>
+</html>
