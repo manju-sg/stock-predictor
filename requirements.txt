@@ -9,3 +9,4 @@ yfinance
 gunicorn
 flask
 flask-cors
+nltk
