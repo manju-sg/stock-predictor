@@ -7,3 +7,5 @@ ta
 matplotlib
 yfinance
 gunicorn
+flask
+flask-cors
